@@ -204,9 +204,7 @@ function App() {
     const history = [...messages, userMessage]
 
     const baseUrl = apiUrl.replace(/\/+$/, '')
-    const endpoint = baseUrl === DEFAULT_API_URL
-      ? '/ask'
-      : baseUrl + '/ask'
+    const endpoint = baseUrl + '/ask'
 
     const lastMsg = history[history.length - 1]?.content || ''
     const body = { question: lastMsg }
