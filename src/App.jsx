@@ -1,44 +1,30 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import './App.css'
 
-const DEFAULT_API_URL = 'https://pragadeesh10-agriapp2.hf.space/gradio_api'
-
 function renderMarkdown(text) {
   if (!text) return ''
-  let html = text
+  const escaped = text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/`(.+?)`/g, '<code>$1</code>')
 
-  const lines = html.split('\n')
+  const lines = escaped.split('\n')
   const result = []
-  let inList = false
+  let inBullet = false
 
   for (const line of lines) {
-    const numberedMatch = line.match(/^(\d+)\.\s+(.+)$/)
-    if (numberedMatch) {
-      if (!inList) { result.push('<ol>'); inList = true }
-      result.push('<li>' + numberedMatch[2] + '</li>')
-      continue
-    }
-    if (inList) { result.push('</ol>'); inList = false }
-
-    const headerMatch = line.match(/^(#{1,4})\s+(.+)$/)
-    if (headerMatch) {
-      const level = headerMatch[1].length
-      result.push(`<h${level}>${headerMatch[2]}</h${level}>`)
-      continue
-    }
-
-    if (line.trim() === '') {
+    const trimmed = line.trim()
+    if (!trimmed) {
+      if (inBullet) { result.push('</ul>'); inBullet = false }
       result.push('<br>')
-    } else {
-      result.push(line)
+      continue
     }
+    if (!inBullet) { result.push('<ul>'); inBullet = true }
+    result.push('<li>' + trimmed + '</li>')
   }
-  if (inList) result.push('</ol>')
+  if (inBullet) result.push('</ul>')
 
   return result.join('\n')
 }
@@ -143,16 +129,7 @@ function ChatMessage({ role, content, isStreaming }) {
   )
 }
 
-function SettingsPanel({ apiUrl, setApiUrl, apiKey, setApiKey, streamMode, setStreamMode, onClose }) {
-  const [tempUrl, setTempUrl] = useState(apiUrl)
-  const [tempKey, setTempKey] = useState(apiKey)
-
-  const handleSave = () => {
-    setApiUrl(tempUrl)
-    setApiKey(tempKey)
-    onClose()
-  }
-
+function SettingsPanel({ onClose }) {
   return (
     <div className="settings-overlay" onClick={onClose}>
       <div className="settings-panel" onClick={e => e.stopPropagation()}>
@@ -166,41 +143,12 @@ function SettingsPanel({ apiUrl, setApiUrl, apiKey, setApiKey, streamMode, setSt
           </button>
         </div>
         <div className="settings-body">
-          <label className="settings-label">
-            API Base URL
-            <input
-              type="text"
-              className="settings-input"
-              value={tempUrl}
-              onChange={e => setTempUrl(e.target.value)}
-              placeholder="https://your-api.com"
-            />
-          </label>
-          <label className="settings-label">
-            API Key (optional)
-            <input
-              type="password"
-              className="settings-input"
-              value={tempKey}
-              onChange={e => setTempKey(e.target.value)}
-              placeholder="sk-..."
-            />
-          </label>
-          <label className="settings-checkbox">
-            <input
-              type="checkbox"
-              checked={streamMode}
-              onChange={e => setStreamMode(e.target.checked)}
-            />
-            <span>Enable streaming (SSE)</span>
-          </label>
           <p className="settings-hint">
-            Default API uses Hugging Face Spaces Gradio endpoint. Change the URL if you use a custom backend.
+            FarmChat is powered by Agronomy RAG on Hugging Face Spaces.
           </p>
         </div>
         <div className="settings-footer">
-          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleSave}>Save</button>
+          <button className="btn btn-primary" onClick={onClose}>Close</button>
         </div>
       </div>
     </div>
@@ -213,9 +161,6 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [streamingMessage, setStreamingMessage] = useState('')
   const [showSettings, setShowSettings] = useState(false)
-  const [apiUrl, setApiUrl] = useState(DEFAULT_API_URL)
-  const [apiKey, setApiKey] = useState('')
-  const [streamMode, setStreamMode] = useState(false)
   const [error, setError] = useState(null)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
@@ -252,11 +197,9 @@ function App() {
 
     const history = [...messages, userMessage]
 
-    const baseUrl = apiUrl.replace(/\/+$/, '')
-    const isDefault = baseUrl === DEFAULT_API_URL
-    const endpoint = isDefault && import.meta.env.DEV
+    const endpoint = import.meta.env.DEV
       ? '/gradio_api/call/ask'
-      : baseUrl + '/call/ask'
+      : 'https://pragadeesh10-agriapp2.hf.space/gradio_api/call/ask'
 
     const lastMsg = history[history.length - 1]?.content || ''
 
@@ -269,10 +212,7 @@ function App() {
     try {
       const initRes = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(apiKey && { 'Authorization': `Bearer ${apiKey}` }),
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: [lastMsg] }),
         signal: controller.signal,
       })
@@ -480,15 +420,7 @@ function App() {
       </div>
 
       {showSettings && (
-        <SettingsPanel
-          apiUrl={apiUrl}
-          setApiUrl={setApiUrl}
-          apiKey={apiKey}
-          setApiKey={setApiKey}
-          streamMode={streamMode}
-          setStreamMode={setStreamMode}
-          onClose={() => setShowSettings(false)}
-        />
+        <SettingsPanel onClose={() => setShowSettings(false)} />
       )}
     </div>
   )

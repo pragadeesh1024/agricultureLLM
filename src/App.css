@@ -261,15 +261,16 @@
 .typewriter-text.markdown h3 { font-size: 15px; }
 .typewriter-text.markdown h4 { font-size: 14px; }
 
-.typewriter-text.markdown ul,
-.typewriter-text.markdown ol {
-  margin: 6px 0;
-  padding-left: 24px;
+.typewriter-text.markdown ul {
+  margin: 4px 0;
+  padding-left: 22px;
+  list-style: disc;
 }
 
 .typewriter-text.markdown li {
-  margin: 4px 0;
-  line-height: 1.7;
+  margin: 6px 0;
+  line-height: 1.8;
+  padding-left: 2px;
 }
 
 .cursor-blink {
