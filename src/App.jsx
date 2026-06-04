@@ -3,6 +3,46 @@ import './App.css'
 
 const DEFAULT_API_URL = 'https://pragadeesh10-agriapp2.hf.space/gradio_api'
 
+function renderMarkdown(text) {
+  if (!text) return ''
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`(.+?)`/g, '<code>$1</code>')
+
+  const lines = html.split('\n')
+  const result = []
+  let inList = false
+
+  for (const line of lines) {
+    const numberedMatch = line.match(/^(\d+)\.\s+(.+)$/)
+    if (numberedMatch) {
+      if (!inList) { result.push('<ol>'); inList = true }
+      result.push('<li>' + numberedMatch[2] + '</li>')
+      continue
+    }
+    if (inList) { result.push('</ol>'); inList = false }
+
+    const headerMatch = line.match(/^(#{1,4})\s+(.+)$/)
+    if (headerMatch) {
+      const level = headerMatch[1].length
+      result.push(`<h${level}>${headerMatch[2]}</h${level}>`)
+      continue
+    }
+
+    if (line.trim() === '') {
+      result.push('<br>')
+    } else {
+      result.push(line)
+    }
+  }
+  if (inList) result.push('</ol>')
+
+  return result.join('\n')
+}
+
 function useTypewriter(text, speed = 20) {
   const [displayed, setDisplayed] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -48,6 +88,15 @@ function useTypewriter(text, speed = 20) {
 function TypewriterMessage({ content, isStreaming }) {
   const { displayed, isTyping } = useTypewriter(content, 15)
   const showCursor = isTyping || isStreaming
+
+  if (!isTyping && content) {
+    return (
+      <span
+        className="typewriter-text markdown"
+        dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
+      />
+    )
+  }
 
   return (
     <span className="typewriter-text">

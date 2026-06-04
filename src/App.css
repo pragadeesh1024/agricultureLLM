@@ -124,13 +124,15 @@
 .empty-state .empty-hint {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-top: 12px;
-  padding: 16px;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 18px 20px;
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   text-align: left;
+  width: 100%;
+  max-width: 360px;
 }
 
 .empty-state .empty-hint span {
@@ -138,12 +140,15 @@
   color: var(--text-secondary);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  padding: 4px 0;
 }
 
 .empty-state .empty-hint .hint-icon {
   color: var(--leaf-accent);
   flex-shrink: 0;
+  width: 16px;
+  height: 16px;
 }
 
 .messages {
@@ -211,14 +216,60 @@
 
 .message-text {
   font-size: 15px;
-  line-height: 1.7;
+  line-height: 1.8;
   color: var(--text-primary);
   white-space: pre-wrap;
   word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .typewriter-text {
   display: inline;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.typewriter-text.markdown {
+  display: block;
+  line-height: 1.8;
+}
+
+.typewriter-text.markdown strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.typewriter-text.markdown code {
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--leaf-accent);
+}
+
+.typewriter-text.markdown h1,
+.typewriter-text.markdown h2,
+.typewriter-text.markdown h3,
+.typewriter-text.markdown h4 {
+  margin: 12px 0 6px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.typewriter-text.markdown h1 { font-size: 18px; }
+.typewriter-text.markdown h2 { font-size: 16px; }
+.typewriter-text.markdown h3 { font-size: 15px; }
+.typewriter-text.markdown h4 { font-size: 14px; }
+
+.typewriter-text.markdown ul,
+.typewriter-text.markdown ol {
+  margin: 6px 0;
+  padding-left: 24px;
+}
+
+.typewriter-text.markdown li {
+  margin: 4px 0;
+  line-height: 1.7;
 }
 
 .cursor-blink {
