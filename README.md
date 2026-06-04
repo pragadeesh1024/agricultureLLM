@@ -1,16 +1,26 @@
-# React + Vite
+# 🌾 Agronomy RAG System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An AI-powered Agriculture Q&A system built using 
+RAG (Retrieval Augmented Generation) architecture.
 
-Currently, two official plugins are available:
+## 🚀 Live Demo
+[Try it here](https://llm-chat-hndyi2dj2-holland1024s-projects.vercel.app/)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🛠️ Tech Stack
+- *Embeddings:* Sentence Transformers (all-MiniLM-L6-v2)
+- *Vector Store:* FAISS
+- *PDF Processing:* PyPDF
+- *Frontend:* Gradio
+- *Hosting:* HuggingFace Spaces
 
-## React Compiler
+## ⚙️ How It Works
+1. PDF loaded and split into chunks
+2. Chunks converted to embeddings using Sentence Transformers
+3. Stored in FAISS vector index
+4. User query → similarity search → relevant context returned
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 📦 Installation
+pip install -r requirements.txt
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🧑‍💻 Author
+Pragadeeshwaran - AI/ML Engineer
