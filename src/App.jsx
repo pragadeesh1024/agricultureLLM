@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import './App.css'
 
-const DEFAULT_API_URL = 'https://goofball-confound-flaring.ngrok-free.dev'
+const DEFAULT_API_URL = 'https://pragadeesh10-agriapp2.hf.space/gradio_api'
 
 function useTypewriter(text, speed = 20) {
   const [displayed, setDisplayed] = useState('')
@@ -143,10 +143,10 @@ function SettingsPanel({ apiUrl, setApiUrl, apiKey, setApiKey, streamMode, setSt
               checked={streamMode}
               onChange={e => setStreamMode(e.target.checked)}
             />
-            <span>Enable streaming responses</span>
+            <span>Enable streaming (SSE)</span>
           </label>
           <p className="settings-hint">
-            Make sure your API supports CORS or use a browser extension to disable CORS for local development.
+            Default API uses Hugging Face Spaces Gradio endpoint. Change the URL if you use a custom backend.
           </p>
         </div>
         <div className="settings-footer">
@@ -204,40 +204,12 @@ function App() {
     const history = [...messages, userMessage]
 
     const baseUrl = apiUrl.replace(/\/+$/, '')
-    const endpoint = baseUrl + '/ask'
+    const isDefault = baseUrl === DEFAULT_API_URL
+    const endpoint = isDefault && import.meta.env.DEV
+      ? '/gradio_api/call/ask'
+      : baseUrl + '/call/ask'
 
     const lastMsg = history[history.length - 1]?.content || ''
-    const body = { question: lastMsg }
-
-    if (!streamMode) {
-      setIsLoading(true)
-      try {
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(apiKey && { 'Authorization': `Bearer ${apiKey}` }),
-          },
-          body: JSON.stringify(body),
-        })
-
-        if (!res.ok) {
-          const errText = await res.text().catch(() => '')
-          throw new Error(`HTTP ${res.status}: ${errText || res.statusText}`)
-        }
-
-        const data = await res.json()
-        const content = data.answer || data.response || JSON.stringify(data)
-        setMessages(prev => [...prev, { role: 'assistant', content }])
-      } catch (err) {
-        if (err.name === 'AbortError') return
-        setError(err.message)
-        setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${err.message}` }])
-      } finally {
-        setIsLoading(false)
-      }
-      return
-    }
 
     setIsLoading(true)
     setStreamingMessage('')
@@ -246,59 +218,60 @@ function App() {
     abortRef.current = controller
 
     try {
-      const res = await fetch(endpoint, {
+      const initRes = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(apiKey && { 'Authorization': `Bearer ${apiKey}` }),
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ data: [lastMsg] }),
         signal: controller.signal,
       })
 
-      if (!res.ok) {
-        const errText = await res.text().catch(() => '')
-        throw new Error(`HTTP ${res.status}: ${errText || res.statusText}`)
+      if (!initRes.ok) {
+        const errText = await initRes.text().catch(() => '')
+        throw new Error(`HTTP ${initRes.status}: ${errText || initRes.statusText}`)
+      }
+
+      const { event_id } = await initRes.json()
+      if (!event_id) throw new Error('No event_id received')
+
+      const sseRes = await fetch(endpoint + '/' + event_id, {
+        signal: controller.signal,
+      })
+
+      if (!sseRes.ok) {
+        throw new Error(`SSE HTTP ${sseRes.status}`)
       }
 
       let fullContent = ''
+      const reader = sseRes.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
 
-      if (res.headers.get('content-type')?.includes('text/event-stream')) {
-        const reader = res.body.getReader()
-        const decoder = new TextDecoder()
-        let buffer = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
 
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
 
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split('\n')
-          buffer = lines.pop() || ''
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6).trim()
-              if (data === '[DONE]') continue
-              try {
-                const parsed = JSON.parse(data)
-                const delta = parsed.choices?.[0]?.delta?.content || parsed.choices?.[0]?.text || ''
-                if (delta) {
-                  fullContent += delta
-                  setStreamingMessage(fullContent)
-                }
-              } catch {
-                if (data) fullContent += data
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6).trim()
+            try {
+              const parsed = JSON.parse(data)
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                fullContent = parsed[0] || ''
                 setStreamingMessage(fullContent)
               }
+            } catch {
+              if (data && data !== '[]') fullContent += data
+              setStreamingMessage(fullContent)
             }
           }
         }
-      } else {
-        const data = await res.json()
-        fullContent = data.answer || data.response || JSON.stringify(data)
-        setStreamingMessage(fullContent)
-        await new Promise(r => setTimeout(r, 100))
       }
 
       setStreamingMessage('')

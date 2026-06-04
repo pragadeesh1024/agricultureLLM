@@ -7,8 +7,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/ask': {
-        target: 'https://goofball-confound-flaring.ngrok-free.dev',
+      '/gradio_api': {
+        target: 'https://pragadeesh10-agriapp2.hf.space',
         changeOrigin: true,
         secure: false,
       },
